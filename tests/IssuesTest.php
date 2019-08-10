@@ -2,11 +2,16 @@
 
 namespace Rap2hpoutre\FastExcel\Tests;
 
-use Box\Spout\Common\Type;
-use Box\Spout\Reader\ReaderFactory;
 use Illuminate\Support\Collection;
 use Rap2hpoutre\FastExcel\FastExcel;
 use Rap2hpoutre\FastExcel\SheetCollection;
+use Box\Spout\Common\Exception\IOException;
+use Box\Spout\Common\Exception\InvalidArgumentException;
+use Box\Spout\Common\Exception\UnsupportedTypeException;
+use Box\Spout\Reader\Common\Creator\ReaderEntityFactory;
+use Box\Spout\Reader\Exception\ReaderNotOpenedException;
+use Box\Spout\Writer\Exception\WriterNotOpenedException;
+use Box\Spout\Writer\Exception\InvalidSheetNameException;
 
 /**
  * Class IssuesTest.
@@ -14,11 +19,12 @@ use Rap2hpoutre\FastExcel\SheetCollection;
 class IssuesTest extends TestCase
 {
     /**
-     * @throws \Box\Spout\Common\Exception\IOException
-     * @throws \Box\Spout\Common\Exception\InvalidArgumentException
-     * @throws \Box\Spout\Common\Exception\UnsupportedTypeException
-     * @throws \Box\Spout\Reader\Exception\ReaderNotOpenedException
-     * @throws \Box\Spout\Writer\Exception\WriterNotOpenedException
+     * @throws IOException
+     * @throws InvalidArgumentException
+     * @throws UnsupportedTypeException
+     * @throws ReaderNotOpenedException
+     * @throws WriterNotOpenedException
+     * @throws InvalidSheetNameException
      */
     public function testIssue11()
     {
@@ -32,9 +38,9 @@ class IssuesTest extends TestCase
     }
 
     /**
-     * @throws \Box\Spout\Common\Exception\IOException
-     * @throws \Box\Spout\Common\Exception\UnsupportedTypeException
-     * @throws \Box\Spout\Reader\Exception\ReaderNotOpenedException
+     * @throws IOException
+     * @throws UnsupportedTypeException
+     * @throws ReaderNotOpenedException
      */
     public function testIssue18()
     {
@@ -43,11 +49,12 @@ class IssuesTest extends TestCase
     }
 
     /**
-     * @throws \Box\Spout\Common\Exception\IOException
-     * @throws \Box\Spout\Common\Exception\InvalidArgumentException
-     * @throws \Box\Spout\Common\Exception\UnsupportedTypeException
-     * @throws \Box\Spout\Reader\Exception\ReaderNotOpenedException
-     * @throws \Box\Spout\Writer\Exception\WriterNotOpenedException
+     * @throws IOException
+     * @throws InvalidArgumentException
+     * @throws UnsupportedTypeException
+     * @throws ReaderNotOpenedException
+     * @throws WriterNotOpenedException
+     * @throws InvalidSheetNameException
      */
     public function testIssue20()
     {
@@ -58,11 +65,12 @@ class IssuesTest extends TestCase
     }
 
     /**
-     * @throws \Box\Spout\Common\Exception\IOException
-     * @throws \Box\Spout\Common\Exception\InvalidArgumentException
-     * @throws \Box\Spout\Common\Exception\UnsupportedTypeException
-     * @throws \Box\Spout\Writer\Exception\WriterNotOpenedException
-     * @throws \Box\Spout\Reader\Exception\ReaderNotOpenedException
+     * @throws IOException
+     * @throws InvalidArgumentException
+     * @throws UnsupportedTypeException
+     * @throws WriterNotOpenedException
+     * @throws ReaderNotOpenedException
+     * @throws InvalidSheetNameException
      */
     public function testIssue19()
     {
@@ -73,11 +81,12 @@ class IssuesTest extends TestCase
     }
 
     /**
-     * @throws \Box\Spout\Common\Exception\IOException
-     * @throws \Box\Spout\Common\Exception\InvalidArgumentException
-     * @throws \Box\Spout\Common\Exception\UnsupportedTypeException
-     * @throws \Box\Spout\Reader\Exception\ReaderNotOpenedException
-     * @throws \Box\Spout\Writer\Exception\WriterNotOpenedException
+     * @throws IOException
+     * @throws InvalidArgumentException
+     * @throws UnsupportedTypeException
+     * @throws ReaderNotOpenedException
+     * @throws WriterNotOpenedException
+     * @throws InvalidSheetNameException
      */
     public function testIssue26()
     {
@@ -90,11 +99,12 @@ class IssuesTest extends TestCase
     }
 
     /**
-     * @throws \Box\Spout\Common\Exception\IOException
-     * @throws \Box\Spout\Common\Exception\InvalidArgumentException
-     * @throws \Box\Spout\Common\Exception\UnsupportedTypeException
-     * @throws \Box\Spout\Reader\Exception\ReaderNotOpenedException
-     * @throws \Box\Spout\Writer\Exception\WriterNotOpenedException
+     * @throws IOException
+     * @throws InvalidArgumentException
+     * @throws UnsupportedTypeException
+     * @throws ReaderNotOpenedException
+     * @throws WriterNotOpenedException
+     * @throws InvalidSheetNameException
      */
     public function testIssue32()
     {
@@ -115,17 +125,17 @@ class IssuesTest extends TestCase
     }
 
     /**
-     * @throws \Box\Spout\Common\Exception\IOException
-     * @throws \Box\Spout\Common\Exception\InvalidArgumentException
-     * @throws \Box\Spout\Common\Exception\UnsupportedTypeException
-     * @throws \Box\Spout\Reader\Exception\ReaderNotOpenedException
-     * @throws \Box\Spout\Writer\Exception\WriterNotOpenedException
+     * @throws IOException
+     * @throws InvalidArgumentException
+     * @throws ReaderNotOpenedException
+     * @throws WriterNotOpenedException
+     * @throws InvalidSheetNameException
      */
     public function testIssue40()
     {
         $col = new SheetCollection(['1st Sheet' => $this->collection(), '2nd Sheet' => $this->collection()]);
         (new FastExcel($col))->export(__DIR__.'/test2.xlsx');
-        $reader = ReaderFactory::create(Type::XLSX);
+        $reader = ReaderEntityFactory::createXLSXReader();
         $reader->open(__DIR__.'/test2.xlsx');
         foreach ($reader->getSheetIterator() as $key => $sheet) {
             $this->assertEquals($sheet->getName(), $key === 2 ? '2nd Sheet' : '1st Sheet');

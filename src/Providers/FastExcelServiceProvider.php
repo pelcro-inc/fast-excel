@@ -11,7 +11,7 @@ class FastExcelServiceProvider extends ServiceProvider
      *
      * @return void
      */
-    public function boot()
+    public function boot(): void
     {
         //
     }
@@ -23,9 +23,9 @@ class FastExcelServiceProvider extends ServiceProvider
      *
      * @return void
      */
-    public function register()
+    public function register(): void
     {
-        $this->app->bind('fastexcel', function ($app, $data = null) {
+        $this->app->bind('fastexcel', static function ($app, $data = null) {
             if (is_array($data)) {
                 $data = collect($data);
             }

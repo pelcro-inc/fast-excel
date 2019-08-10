@@ -2,9 +2,14 @@
 
 namespace Rap2hpoutre\FastExcel;
 
-use Box\Spout\Reader\ReaderFactory;
-use Box\Spout\Reader\SheetInterface;
+use Box\Spout\Common\Type;
 use Illuminate\Support\Collection;
+use Box\Spout\Reader\SheetInterface;
+use Box\Spout\Common\Exception\IOException;
+use Box\Spout\Reader\Common\Creator\ReaderEntityFactory;
+use Box\Spout\Writer\Common\Creator\WriterEntityFactory;
+use Box\Spout\Common\Exception\UnsupportedTypeException;
+use Box\Spout\Reader\Exception\ReaderNotOpenedException;
 
 /**
  * Trait Importable.
@@ -23,10 +28,10 @@ trait Importable
      *
      * @return string
      */
-    abstract protected function getType($path);
+    abstract protected function getType($path): string;
 
     /**
-     * @param \Box\Spout\Reader\ReaderInterface|\Box\Spout\Writer\WriterInterface $reader_or_writer
+     * @param ReaderEntityFactory|WriterEntityFactory $reader_or_writer
      *
      * @return mixed
      */
@@ -36,13 +41,13 @@ trait Importable
      * @param string        $path
      * @param callable|null $callback
      *
-     * @throws \Box\Spout\Common\Exception\IOException
-     * @throws \Box\Spout\Common\Exception\UnsupportedTypeException
-     * @throws \Box\Spout\Reader\Exception\ReaderNotOpenedException
-     *
      * @return Collection
+     * @throws UnsupportedTypeException
+     * @throws ReaderNotOpenedException
+     *
+     * @throws IOException
      */
-    public function import($path, callable $callback = null)
+    public function import($path, callable $callback = null): Collection
     {
         $reader = $this->reader($path);
 
@@ -61,13 +66,13 @@ trait Importable
      * @param string        $path
      * @param callable|null $callback
      *
-     * @throws \Box\Spout\Common\Exception\IOException
-     * @throws \Box\Spout\Common\Exception\UnsupportedTypeException
-     * @throws \Box\Spout\Reader\Exception\ReaderNotOpenedException
-     *
      * @return Collection
+     * @throws UnsupportedTypeException
+     * @throws ReaderNotOpenedException
+     *
+     * @throws IOException
      */
-    public function importSheets($path, callable $callback = null)
+    public function importSheets($path, callable $callback = null): Collection
     {
         $reader = $this->reader($path);
 
@@ -83,18 +88,29 @@ trait Importable
     /**
      * @param $path
      *
-     * @throws \Box\Spout\Common\Exception\IOException
-     * @throws \Box\Spout\Common\Exception\UnsupportedTypeException
+     * @return \Box\Spout\Reader\CSV\Reader|\Box\Spout\Reader\ODS\Reader|\Box\Spout\Reader\XLSX\Reader
      *
-     * @return \Box\Spout\Reader\ReaderInterface
+     * @throws UnsupportedTypeException
+     * @throws IOException
      */
     private function reader($path)
     {
-        $reader = ReaderFactory::create($this->getType($path));
-        $this->setOptions($reader);
-        /* @var \Box\Spout\Reader\ReaderInterface $reader */
-        $reader->open($path);
+        switch ($this->getType($path)) {
+            case Type::XLSX:
+                $reader = ReaderEntityFactory::createXLSXReader(); // replaces ReaderFactory::create(Type::XLSX)
+                break;
+            case Type::CSV:
+                $reader = ReaderEntityFactory::createCSVReader();  // replaces ReaderFactory::create(Type::CSV)
+                break;
+            case Type::ODS:
+                $reader = ReaderEntityFactory::createODSReader();  // replaces ReaderFactory::create(Type::ODS)
+                break;
+            default:
+                throw new UnsupportedTypeException('Unsupported type ' . $this->getType($path));
+        }
 
+        $this->setOptions($reader);
+        $reader->open($path);
         return $reader;
     }
 
@@ -104,7 +120,7 @@ trait Importable
      *
      * @return array
      */
-    private function importSheet(SheetInterface $sheet, callable $callback = null)
+    private function importSheet(SheetInterface $sheet, callable $callback = null): array
     {
         $headers = [];
         $collection = [];
@@ -112,32 +128,34 @@ trait Importable
 
         if ($this->with_header) {
             foreach ($sheet->getRowIterator() as $k => $row) {
+                $rowAsArray = $row->toArray();
                 if ($k == 1) {
-                    $headers = $this->toStrings($row);
+                    $headers = $this->toStrings($rowAsArray);
                     $count_header = count($headers);
                     continue;
                 }
-                if ($count_header > $count_row = count($row)) {
-                    $row = array_merge($row, array_fill(0, $count_header - $count_row, null));
-                } elseif ($count_header < $count_row = count($row)) {
-                    $row = array_slice($row, 0, $count_header);
+                if ($count_header > $count_row = count($rowAsArray)) {
+                    $rowAsArray = array_merge($rowAsArray, array_fill(0, $count_header - $count_row, null));
+                } elseif ($count_header < $count_row = count($rowAsArray)) {
+                    $rowAsArray = array_slice($rowAsArray, 0, $count_header);
                 }
                 if ($callback) {
-                    if ($result = $callback(array_combine($headers, $row))) {
+                    if ($result = $callback(array_combine($headers, $rowAsArray))) {
                         $collection[] = $result;
                     }
                 } else {
-                    $collection[] = array_combine($headers, $row);
+                    $collection[] = array_combine($headers, $rowAsArray);
                 }
             }
         } else {
             foreach ($sheet->getRowIterator() as $row) {
+                $rowAsArray = $row->toArray();
                 if ($callback) {
-                    if ($result = $callback($row)) {
+                    if ($result = $callback($rowAsArray)) {
                         $collection[] = $result;
                     }
                 } else {
-                    $collection[] = $row;
+                    $collection[] = $rowAsArray;
                 }
             }
         }
@@ -150,7 +168,7 @@ trait Importable
      *
      * @return array
      */
-    private function toStrings($values)
+    private function toStrings($values): array
     {
         foreach ($values as &$value) {
             if ($value instanceof \Datetime) {

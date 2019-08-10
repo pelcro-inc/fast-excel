@@ -4,7 +4,9 @@ namespace Rap2hpoutre\FastExcel;
 
 use Box\Spout\Common\Type;
 use Box\Spout\Reader\CSV\Reader as CSVReader;
+use Box\Spout\Reader\ReaderInterface;
 use Box\Spout\Writer\CSV\Writer as CSVWriter;
+use Box\Spout\Writer\WriterInterface;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 
@@ -31,7 +33,6 @@ class FastExcel
     private $csv_configuration = [
         'delimiter' => ',',
         'enclosure' => '"',
-        'eol'       => "\n",
         'encoding'  => 'UTF-8',
         'bom'       => true,
     ];
@@ -53,7 +54,7 @@ class FastExcel
      *
      * @return FastExcel
      */
-    public function data($data)
+    public function data($data): self
     {
         $this->data = $data;
 
@@ -65,7 +66,7 @@ class FastExcel
      *
      * @return string
      */
-    protected function getType($path)
+    protected function getType($path): ?string
     {
         if (Str::endsWith($path, Type::CSV)) {
             return Type::CSV;
@@ -81,7 +82,7 @@ class FastExcel
      *
      * @return $this
      */
-    public function sheet($sheet_number)
+    public function sheet($sheet_number): self
     {
         $this->sheet_number = $sheet_number;
 
@@ -91,7 +92,7 @@ class FastExcel
     /**
      * @return $this
      */
-    public function withoutHeaders()
+    public function withoutHeaders(): self
     {
         $this->with_header = false;
 
@@ -101,29 +102,27 @@ class FastExcel
     /**
      * @param string $delimiter
      * @param string $enclosure
-     * @param string $eol
      * @param string $encoding
-     * @param bool   $bom
+     * @param bool $bom
      *
      * @return $this
      */
-    public function configureCsv($delimiter = ',', $enclosure = '"', $eol = "\n", $encoding = 'UTF-8', $bom = false)
+    public function configureCsv($delimiter = ',', $enclosure = '"', $encoding = 'UTF-8', $bom = false): self
     {
-        $this->csv_configuration = compact('delimiter', 'enclosure', 'eol', 'encoding', 'bom');
+        $this->csv_configuration = compact('delimiter', 'enclosure', 'encoding', 'bom');
 
         return $this;
     }
 
     /**
-     * @param \Box\Spout\Reader\ReaderInterface|\Box\Spout\Writer\WriterInterface $reader_or_writer
+     * @param ReaderInterface|WriterInterface $reader_or_writer
      */
-    protected function setOptions(&$reader_or_writer)
+    protected function setOptions(&$reader_or_writer): void
     {
         if ($reader_or_writer instanceof CSVReader || $reader_or_writer instanceof CSVWriter) {
             $reader_or_writer->setFieldDelimiter($this->csv_configuration['delimiter']);
             $reader_or_writer->setFieldEnclosure($this->csv_configuration['enclosure']);
             if ($reader_or_writer instanceof CSVReader) {
-                $reader_or_writer->setEndOfLineCharacter($this->csv_configuration['eol']);
                 $reader_or_writer->setEncoding($this->csv_configuration['encoding']);
             }
             if ($reader_or_writer instanceof CSVWriter) {

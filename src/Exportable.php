@@ -2,9 +2,17 @@
 
 namespace Rap2hpoutre\FastExcel;
 
-use Box\Spout\Writer\Style\Style;
-use Box\Spout\Writer\WriterFactory;
+use Box\Spout\Common\Type;
 use Illuminate\Support\Collection;
+use Box\Spout\Reader\ReaderInterface;
+use Box\Spout\Writer\WriterInterface;
+use Box\Spout\Common\Entity\Style\Style;
+use Box\Spout\Common\Exception\IOException;
+use Box\Spout\Common\Exception\UnsupportedTypeException;
+use Box\Spout\Writer\Common\Creator\WriterEntityFactory;
+use Box\Spout\Common\Exception\InvalidArgumentException;
+use Box\Spout\Writer\Exception\WriterNotOpenedException;
+use Box\Spout\Writer\Exception\InvalidSheetNameException;
 
 /**
  * Trait Exportable.
@@ -24,25 +32,24 @@ trait Exportable
      *
      * @return string
      */
-    abstract protected function getType($path);
+    abstract protected function getType($path): string;
 
     /**
-     * @param \Box\Spout\Reader\ReaderInterface|\Box\Spout\Writer\WriterInterface $reader_or_writer
+     * @param ReaderInterface|WriterInterface $reader_or_writer
      *
      * @return mixed
      */
     abstract protected function setOptions(&$reader_or_writer);
 
     /**
-     * @param string        $path
+     * @param $path
      * @param callable|null $callback
      *
-     * @throws \Box\Spout\Common\Exception\IOException
-     * @throws \Box\Spout\Common\Exception\InvalidArgumentException
-     * @throws \Box\Spout\Common\Exception\UnsupportedTypeException
-     * @throws \Box\Spout\Writer\Exception\WriterNotOpenedException
-     *
-     * @return string
+     * @return mixed
+     * @throws IOException
+     * @throws InvalidArgumentException
+     * @throws InvalidSheetNameException
+     * @throws WriterNotOpenedException
      */
     public function export($path, callable $callback = null)
     {
@@ -55,12 +62,11 @@ trait Exportable
      * @param $path
      * @param callable|null $callback
      *
-     * @throws \Box\Spout\Common\Exception\IOException
-     * @throws \Box\Spout\Common\Exception\InvalidArgumentException
-     * @throws \Box\Spout\Common\Exception\UnsupportedTypeException
-     * @throws \Box\Spout\Writer\Exception\WriterNotOpenedException
-     *
      * @return \Symfony\Component\HttpFoundation\StreamedResponse|string
+     * @throws IOException
+     * @throws InvalidArgumentException
+     * @throws InvalidSheetNameException
+     * @throws WriterNotOpenedException
      */
     public function download($path, callable $callback = null)
     {
@@ -76,20 +82,31 @@ trait Exportable
 
     /**
      * @param $path
-     * @param string        $function
+     * @param $function
      * @param callable|null $callback
      *
-     * @throws \Box\Spout\Common\Exception\IOException
-     * @throws \Box\Spout\Common\Exception\InvalidArgumentException
-     * @throws \Box\Spout\Common\Exception\UnsupportedTypeException
-     * @throws \Box\Spout\Writer\Exception\WriterNotOpenedException
-     * @throws \Box\Spout\Common\Exception\SpoutException
+     * @throws IOException
+     * @throws InvalidArgumentException
+     * @throws WriterNotOpenedException
+     * @throws InvalidSheetNameException
      */
-    private function exportOrDownload($path, $function, callable $callback = null)
+    private function exportOrDownload($path, $function, callable $callback = null): void
     {
-        $writer = WriterFactory::create($this->getType($path));
+        switch ($this->getType($path)) {
+            case Type::XLSX:
+                $writer = WriterEntityFactory::createXLSXWriter(); // replaces WriterFactory::create(Type::XLSX)
+                break;
+            case Type::CSV:
+                $writer = WriterEntityFactory::createCSVWriter();  // replaces WriterFactory::create(Type::CSV)
+                break;
+            case Type::ODS:
+                $writer = WriterEntityFactory::createODSWriter();  // replaces WriterFactory::create(Type::ODS)
+                break;
+            default:
+                throw new UnsupportedTypeException('Unsupported type ' . $this->getType($path));
+        }
+
         $this->setOptions($writer);
-        /* @var \Box\Spout\Writer\WriterInterface $writer */
         $writer->$function($path);
 
         $has_sheets = ($writer instanceof \Box\Spout\Writer\XLSX\Writer || $writer instanceof \Box\Spout\Writer\ODS\Writer);
@@ -101,7 +118,7 @@ trait Exportable
             if ($collection instanceof Collection) {
                 // Apply callback
                 if ($callback) {
-                    $collection->transform(function ($value) use ($callback) {
+                    $collection->transform(static function ($value) use ($callback) {
                         return $callback($value);
                     });
                 }
@@ -112,12 +129,15 @@ trait Exportable
                     $first_row = $collection->first();
                     $keys = array_keys(is_array($first_row) ? $first_row : $first_row->toArray());
                     if ($this->header_style) {
-                        $writer->addRowWithStyle($keys, $this->header_style);
+                        $row = WriterEntityFactory::createRowFromArray($keys, $this->header_style);
                     } else {
-                        $writer->addRow($keys);
+                        $row = WriterEntityFactory::createRowFromArray($keys);
                     }
+                    $writer->addRow($row);
                 }
-                $writer->addRows($collection->toArray());
+                foreach ($collection->toArray() as $row) {
+                    $writer->addRow(WriterEntityFactory::createRowFromArray(array_values((array)$row)));
+                }
             }
             if (is_string($key)) {
                 $writer->getCurrentSheet()->setName($key);
@@ -132,7 +152,7 @@ trait Exportable
     /**
      * Prepare collection by removing non string if required.
      */
-    protected function prepareCollection()
+    protected function prepareCollection(): void
     {
         $need_conversion = false;
         $first_row = $this->data->first();
@@ -156,10 +176,10 @@ trait Exportable
      */
     private function transform()
     {
-        $this->data->transform(function ($data) {
-            return collect($data)->map(function ($value) {
-                return is_int($value) || is_float($value) || is_null($value) ? (string) $value : $value;
-            })->filter(function ($value) {
+        $this->data->transform(static function ($data) {
+            return collect($data)->map(static function ($value) {
+                return is_int($value) || is_float($value) || $value === null ? (string) $value : $value;
+            })->filter(static function ($value) {
                 return is_string($value);
             });
         });

@@ -2,10 +2,15 @@
 
 namespace Rap2hpoutre\FastExcel\Tests;
 
-use Box\Spout\Writer\Style\Color;
-use Box\Spout\Writer\Style\StyleBuilder;
 use Rap2hpoutre\FastExcel\FastExcel;
+use Box\Spout\Common\Entity\Style\Color;
 use Rap2hpoutre\FastExcel\SheetCollection;
+use Box\Spout\Common\Exception\IOException;
+use Box\Spout\Common\Exception\InvalidArgumentException;
+use Box\Spout\Common\Exception\UnsupportedTypeException;
+use Box\Spout\Reader\Exception\ReaderNotOpenedException;
+use Box\Spout\Writer\Exception\WriterNotOpenedException;
+use Box\Spout\Writer\Common\Creator\Style\StyleBuilder;
 
 /**
  * Class FastExcelTest.
@@ -13,22 +18,22 @@ use Rap2hpoutre\FastExcel\SheetCollection;
 class FastExcelTest extends TestCase
 {
     /**
-     * @throws \Box\Spout\Common\Exception\IOException
-     * @throws \Box\Spout\Common\Exception\UnsupportedTypeException
-     * @throws \Box\Spout\Reader\Exception\ReaderNotOpenedException
+     * @throws IOException
+     * @throws UnsupportedTypeException
+     * @throws ReaderNotOpenedException
      */
-    public function testImportXlsx()
+    public function testImportXlsx(): void
     {
         $collection = (new FastExcel())->import(__DIR__.'/test1.xlsx');
         $this->assertEquals($this->collection(), $collection);
     }
 
     /**
-     * @throws \Box\Spout\Common\Exception\IOException
-     * @throws \Box\Spout\Common\Exception\UnsupportedTypeException
-     * @throws \Box\Spout\Reader\Exception\ReaderNotOpenedException
+     * @throws IOException
+     * @throws UnsupportedTypeException
+     * @throws ReaderNotOpenedException
      */
-    public function testImportCsv()
+    public function testImportCsv(): void
     {
         $original_collection = $this->collection();
 
@@ -40,13 +45,14 @@ class FastExcelTest extends TestCase
     }
 
     /**
-     * @throws \Box\Spout\Common\Exception\IOException
-     * @throws \Box\Spout\Common\Exception\InvalidArgumentException
-     * @throws \Box\Spout\Common\Exception\UnsupportedTypeException
-     * @throws \Box\Spout\Reader\Exception\ReaderNotOpenedException
-     * @throws \Box\Spout\Writer\Exception\WriterNotOpenedException
+     * @param $file
+     * @throws IOException
+     * @throws InvalidArgumentException
+     * @throws ReaderNotOpenedException
+     * @throws UnsupportedTypeException
+     * @throws WriterNotOpenedException
      */
-    private function export($file)
+    private function export($file): void
     {
         $original_collection = $this->collection();
 
@@ -56,35 +62,35 @@ class FastExcelTest extends TestCase
     }
 
     /**
-     * @throws \Box\Spout\Common\Exception\IOException
-     * @throws \Box\Spout\Common\Exception\InvalidArgumentException
-     * @throws \Box\Spout\Common\Exception\UnsupportedTypeException
-     * @throws \Box\Spout\Writer\Exception\WriterNotOpenedException
-     * @throws \Box\Spout\Reader\Exception\ReaderNotOpenedException
+     * @throws IOException
+     * @throws InvalidArgumentException
+     * @throws UnsupportedTypeException
+     * @throws WriterNotOpenedException
+     * @throws ReaderNotOpenedException
      */
-    public function testExportXlsx()
+    public function testExportXlsx(): void
     {
         $this->export(__DIR__.'/test2.xlsx');
     }
 
     /**
-     * @throws \Box\Spout\Common\Exception\IOException
-     * @throws \Box\Spout\Common\Exception\InvalidArgumentException
-     * @throws \Box\Spout\Common\Exception\UnsupportedTypeException
-     * @throws \Box\Spout\Writer\Exception\WriterNotOpenedException
-     * @throws \Box\Spout\Reader\Exception\ReaderNotOpenedException
+     * @throws IOException
+     * @throws InvalidArgumentException
+     * @throws UnsupportedTypeException
+     * @throws WriterNotOpenedException
+     * @throws ReaderNotOpenedException
      */
-    public function testExportCsv()
+    public function testExportCsv(): void
     {
         $this->export(__DIR__.'/test3.csv');
     }
 
     /**
-     * @throws \Box\Spout\Common\Exception\IOException
-     * @throws \Box\Spout\Common\Exception\UnsupportedTypeException
-     * @throws \Box\Spout\Reader\Exception\ReaderNotOpenedException
+     * @throws IOException
+     * @throws UnsupportedTypeException
+     * @throws ReaderNotOpenedException
      */
-    public function testExcelImportWithCallback()
+    public function testExcelImportWithCallback(): void
     {
         $collection = (new FastExcel())->import(__DIR__.'/test1.xlsx', function ($value) {
             return [
@@ -106,13 +112,13 @@ class FastExcelTest extends TestCase
     }
 
     /**
-     * @throws \Box\Spout\Common\Exception\IOException
-     * @throws \Box\Spout\Common\Exception\InvalidArgumentException
-     * @throws \Box\Spout\Common\Exception\UnsupportedTypeException
-     * @throws \Box\Spout\Reader\Exception\ReaderNotOpenedException
-     * @throws \Box\Spout\Writer\Exception\WriterNotOpenedException
+     * @throws IOException
+     * @throws InvalidArgumentException
+     * @throws UnsupportedTypeException
+     * @throws ReaderNotOpenedException
+     * @throws WriterNotOpenedException
      */
-    public function testExcelExportWithCallback()
+    public function testExcelExportWithCallback(): void
     {
         (new FastExcel(clone $this->collection()))->export(__DIR__.'/test2.xlsx', function ($value) {
             return [
@@ -127,13 +133,13 @@ class FastExcelTest extends TestCase
     }
 
     /**
-     * @throws \Box\Spout\Common\Exception\IOException
-     * @throws \Box\Spout\Common\Exception\InvalidArgumentException
-     * @throws \Box\Spout\Common\Exception\UnsupportedTypeException
-     * @throws \Box\Spout\Reader\Exception\ReaderNotOpenedException
-     * @throws \Box\Spout\Writer\Exception\WriterNotOpenedException
+     * @throws IOException
+     * @throws InvalidArgumentException
+     * @throws UnsupportedTypeException
+     * @throws ReaderNotOpenedException
+     * @throws WriterNotOpenedException
      */
-    public function testExportMultiSheetXLSX()
+    public function testExportMultiSheetXLSX(): void
     {
         $file = __DIR__.'/test_multi_sheets.xlsx';
         $sheets = new SheetCollection([clone $this->collection(), clone $this->collection()]);
@@ -143,13 +149,13 @@ class FastExcelTest extends TestCase
     }
 
     /**
-     * @throws \Box\Spout\Common\Exception\IOException
-     * @throws \Box\Spout\Common\Exception\InvalidArgumentException
-     * @throws \Box\Spout\Common\Exception\UnsupportedTypeException
-     * @throws \Box\Spout\Reader\Exception\ReaderNotOpenedException
-     * @throws \Box\Spout\Writer\Exception\WriterNotOpenedException
+     * @throws IOException
+     * @throws InvalidArgumentException
+     * @throws UnsupportedTypeException
+     * @throws ReaderNotOpenedException
+     * @throws WriterNotOpenedException
      */
-    public function testImportMultiSheetXLSX()
+    public function testImportMultiSheetXLSX(): void
     {
         $collections = [
             collect([['test' => 'row1 col1'], ['test' => 'row2 col1'], ['test' => 'row3 col1']]),
@@ -169,13 +175,13 @@ class FastExcelTest extends TestCase
     }
 
     /**
-     * @throws \Box\Spout\Common\Exception\IOException
-     * @throws \Box\Spout\Common\Exception\InvalidArgumentException
-     * @throws \Box\Spout\Common\Exception\UnsupportedTypeException
-     * @throws \Box\Spout\Reader\Exception\ReaderNotOpenedException
-     * @throws \Box\Spout\Writer\Exception\WriterNotOpenedException
+     * @throws IOException
+     * @throws InvalidArgumentException
+     * @throws UnsupportedTypeException
+     * @throws ReaderNotOpenedException
+     * @throws WriterNotOpenedException
      */
-    public function testExportWithHeaderStyle()
+    public function testExportWithHeaderStyle(): void
     {
         $original_collection = $this->collection();
         $style = (new StyleBuilder())
